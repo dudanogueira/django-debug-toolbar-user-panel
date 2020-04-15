@@ -60,12 +60,12 @@ from django.utils.translation import ugettext_lazy as _
 
 from django.contrib.auth import get_user_model
 
-from debug_toolbar.panels import DebugPanel
+from debug_toolbar.panels import Panel
 
 from . import views
 from .forms import UserForm
 
-class UserPanel(DebugPanel):
+class UserPanel(Panel):
     """
     Panel that allows you to login as other recently-logged in users.
     """
@@ -87,7 +87,7 @@ class UserPanel(DebugPanel):
 
     @property
     def nav_subtitle(self):
-        return self.is_authenticated(self.request) and self.request.user
+        return self.is_authenticated(self.toolbar.request) and self.toolbar.request.user
 
     template = 'debug_toolbar_user_panel/panel.html'
 
@@ -98,18 +98,18 @@ class UserPanel(DebugPanel):
 
         current = []
 
-        if self.is_authenticated(self.request):
+        if self.is_authenticated(self.toolbar.request):
             for field in get_user_model()._meta.fields:
                 if field.name == 'password':
                     continue
                 current.append(
-                    (field.attname, getattr(self.request.user, field.attname))
+                    (field.attname, getattr(self.toolbar.request.user, field.attname))
                 )
 
         return render_to_string(self.template, {
-            'user': self.request.user,
+            'user': self.toolbar.request.user,
             'form': UserForm(),
-            'next': self.request.GET.get('next'),
+            'next': self.toolbar.request.GET.get('next'),
             'users': get_user_model().objects.order_by('-last_login')[:10],
             'current': current,
         })
@@ -121,7 +121,7 @@ class UserPanel(DebugPanel):
         return request.user.is_authenticated()
 
     def process_response(self, request, response):
-        self.request = request
+        self.toolbar.request = request
 
     @classmethod
     def get_urls(cls):
